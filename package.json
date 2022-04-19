@@ -6,6 +6,19 @@
     "start": "func start",
     "test": "echo \"No tests yet...\""
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "@acl/data": "file:../acl-lib/data",
+    "@acl/jwt": "file:../acl-lib/jwt",
+    "@acl/storage": "file:../acl-lib/storage",
+    "@acl/utility": "file:../acl-lib/utility",
+    "@anzp/azure-function-multipart": "^2.0.0",
+    "@sentry/node": "^6.19.6",
+    "axios": "^0.26.1",
+    "busboy": "^1.6.0",
+    "formidable": "^2.0.1",
+    "multer": "^1.4.4",
+    "parse-multipart": "^1.0.4",
+    "parse-multipart-data": "^1.2.1",
+    "stream-buffers": "^3.0.2"
+  }
 }
