@@ -35,8 +35,7 @@ module.exports = async function (context, req) {
     let res={};
     let fileInfo={}
 
-    console.log( files.find((file)=>file.name==='api-options').data.toString()  )
-
+   
     const finfo = files.find((file)=>file.name==='fileInfo')
     const buff = files.find((file)=>file.filename)
 
