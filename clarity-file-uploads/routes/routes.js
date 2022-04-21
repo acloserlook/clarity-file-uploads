@@ -524,6 +524,142 @@ const uploadedFiles=async (req, res) => {
   }  
 };
 
+
+const unattachedCalls =async (req, res) => {
+  try {
+    const {eventId, shopperId} = req.body.data;
+    let authResult = req.aclAuthentication;
+    let currentUserId = !authResult.errored ? authResult.currentUserId : null;
+    // get pending recording file
+    await downloadPendingRecordings(currentUserId, eventId, shopperId);
+    let result = [];
+    const callMetadata = await getFileMetadata(currentUserId, eventId, shopperId, AUDIO_FILE_TYPE);
+    if(!callMetadata) {
+      return res.status(200).json([]);
+    } else if(Array.isArray(callMetadata)) {
+      for(let file of callMetadata) {
+        let fileName = file.fileName;
+        let directory = `${basePath}/${folder[file.fileTypeId]}`;
+        file.url = await aclStorage.generateFileSharedAccessSignatureUri({ directory, fileName, fileTypeId: file.fileTypeId });
+        result.push(file);
+      }
+    }
+    return res.status(200).send(result);
+  } catch (error) {
+    console.error(error);
+    Sentry.addBreadcrumb({
+      type: 'error',
+      category: 'Unattached Calls',
+      message: error.stack,
+      level: Sentry.Severity.Error,
+    });
+    const captureContext = {
+      tags: {
+        section: "File Uploads",
+      }
+    }
+    Sentry.captureException(error, captureContext);
+
+    let message = process.env.ENV === 'production' ? 'Error executing request: Failed to attach Call recordings' : error.message;
+    return res.status(500).send({errored: true, message});
+  }  
+};
+
+const updateFileInfo=async (req, fileInfo, res) => {
+  try {
+   
+    const {
+      fileId, fileTypeId, 
+      fileName,
+      fileDescription, 
+      fileBase64, 
+      width, 
+      height, 
+      storageFilename, 
+      storagePath, 
+      displayOrder, 
+      ...rest
+    } = fileInfo;
+    let authResult = req.aclAuthentication;
+    let currentUserId = !authResult.errored ? authResult.currentUserId : null;
+
+    let procedureKey = `/api/Authorized/FilesUpsert`;
+    let context = { procedureKey, currentUserId };
+    let input = {fileId, fileTypeId, fileDescription, width, height, displayOrder};
+    let result = await aclData.exec(input, context);
+
+    // if(fileObj) {
+    //   let fileStream = bufferToStream(fileObj.buffer);
+    //   fileStream.length = fileObj.size;
+
+      // let options = {
+      //   ...rest,
+      //   storageFilename, 
+      //   storagePath,
+      //   fileStream,
+      //   mimeType: fileObj.mimetype,
+      // }
+      // await aclStorage.saveFiles({fileInfo, fileStream});
+      const newFileUri = await aclStorage.generateFileSharedAccessSignatureUri({ directory: storagePath, fileName: storageFilename, fileTypeId });
+      result.url = newFileUri;
+    // }
+
+    if([IMAGE_FILE_TYPE, RECEIPT_FILE_TYPE].includes(rest.oldFileTypeId)) {
+      let oldDirectoryPath = `${basePath}/${folder[rest.oldFileTypeId]}`;
+      let newDirectoryPath = `${basePath}/${folder[fileTypeId]}`;
+      let response = await aclStorage.moveFile(oldDirectoryPath, newDirectoryPath, fileName);
+      if(response.copyStatus === 'success') result.fileSwapped = true;
+    }
+    return res.status(200).send(result);
+  } catch (error) {
+    console.error(error);
+    Sentry.addBreadcrumb({
+      type: 'error',
+      category: 'Update File Info',
+      message: error.stack,
+      level: Sentry.Severity.Error,
+    });
+    const captureContext = {
+      tags: {
+        section: "File Uploads",
+      }
+    }
+    Sentry.captureException(error, captureContext);
+
+    let message = process.env.ENV === 'production' ? 'Error executing request: Failed to update the file information.' : error.message;
+    return res.status(500).send({errored: true, message});
+  }  
+};
+
+const deleteFiles=async (req, res) => {
+  const {data} = req.body;
+  let fileInfo = data;
+  if(!Array.isArray(fileInfo)) fileInfo = [fileInfo];
+
+  try {
+    const authResult = req.aclAuthentication;
+    const currentUserId = !authResult.errored ? authResult.currentUserId : null;
+
+    let payload = [];
+    for(let { fileId, fileName, fileTypeId } of fileInfo) {
+      const input = { fileId, fileName, fileTypeId };
+      let result = await aclStorage.deleteFile(input, { currentUserId });
+      if(result.success) {
+        const directory = `${basePath}/${folder[fileTypeId]}`;
+        const fileDeleted = await aclStorage.deleteFileInAzureFileShare(directory, fileName);
+        payload.push({ file: fileName, fileId, deleted: true });
+      } else {
+        payload.push({ file: fileName, fileId, deleted: false });
+      }
+    } 
+    return res.status(200).send(payload);
+  } catch (error) {
+    let text = fileInfo.length > 1 ? 'files' : 'file';
+    let message = process.env.ENV === 'production' ? `Error executing request: Failed to delete the selected ${text}.` : error.message;
+    return res.status(500).send({errored: true, message});
+  }
+};
+
 // router.post('/unattachedCalls', authChecker.enforceAuthentication, async (req, res) => {
 //   try {
 //     const {eventId, shopperId} = req.body.data;
@@ -660,6 +796,7 @@ const uploadedFiles=async (req, res) => {
 //   }
 // });
 
+
 // router.post('/shopper-submitted-photos', authChecker.enforceAuthentication, async (req, res) => {
 //   const { shopperId, clientId } = req.body.data;
 //   let authResult = req.aclAuthentication;
@@ -763,4 +900,4 @@ const uploadedFiles=async (req, res) => {
 //   }
 // });
 
-module.exports = {list, uploadFile, uploadedFiles};
+module.exports = {list, uploadFile, uploadedFiles, deleteFiles, unattachedCalls,updateFileInfo};
