@@ -42,45 +42,17 @@ module.exports = async function (context, req) {
     const finfo = files.find((file)=>file.name==='fileInfo')
     const buff = files.find((file)=>file.filename)
 
-    console.log(buff)
-    console.log(finfo)
-
     if(finfo){
         fileInfo = JSON.parse(finfo.data.toString()) 
-        console.log(fileInfo)
     }
 
-    if( buff){
-        
+    if( buff){        
         const buffer = buff.data
         var stream = new Readable();
         stream.push(buffer);
-        stream.push(null);
-        
+        stream.push(null);        
        
     }
-    
-    
-    
-
-    console.log(auth)
-
-
-    const boundary = multipart.getBoundary(req.headers["content-type"]);
-    const files = multipart.parse(req.body, boundary);
-    console.log( files[0].data.toString())
-    const fileInfo = JSON.parse(files[0].data.toString())    
-    const buffer = files[1].data
-    var stream = new Readable();
-    stream.push(buffer);
-    stream.push(null);
-    
-    const aclStorage = new AclStorage()
-    const res =  await aclStorage.saveFile({fileInfo, fileStream: stream })
-
-    console.log(res)
-
-
     
     // console.log(req)
     let response;
@@ -88,11 +60,7 @@ module.exports = async function (context, req) {
 
         
         res =  await aclStorage.saveFile({fileInfo, fileStream: stream })
-    
-        console.log(res)
-
         response = await uploadFile(fileInfo, res)
-        console.log(response)
     }
 
     else if(route==='uploaded-files'){ 
@@ -103,19 +71,15 @@ module.exports = async function (context, req) {
     else if(route==='updateFileInfo'){ 
         stream.length = buff.data.length
         res =  await aclStorage.uploadRawFile({...fileInfo, fileStream: stream, mimetype: buff.type })
-
-        console.log(res)
-
         response = await updateFileInfo(req, fileInfo, context.res)
-        console.log(response)
+
     }
     else if(route==='delete-files'){ 
         response = await deleteFiles(req, context.res)
-        console.log(response)
+
     }
     else if(route==='unattachedCalls'){ 
         response = await unattachedCalls(req, context.res)
-        console.log(response)
 
     }
 
