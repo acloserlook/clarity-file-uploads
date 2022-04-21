@@ -1,3 +1,4 @@
+
 const {uploadFile, 
     uploadedFiles, 
     deleteFiles, 
@@ -16,6 +17,7 @@ const aclStorage = new AclStorage()
 
 
 
+
 module.exports = async function (context, req) {
 
     const route = req.query.route
@@ -23,6 +25,7 @@ module.exports = async function (context, req) {
    
     context.log('JavaScript HTTP trigger function processed a request.');
     const auth = authChecker.enforceAuthentication(req, context.res)
+
     // console.log(auth)
 
     // console.log(req)
@@ -54,6 +57,7 @@ module.exports = async function (context, req) {
     // console.log(req)
     let response;
     if(route==='upload'){ 
+
         
         res =  await aclStorage.saveFile({fileInfo, fileStream: stream })
         response = await uploadFile(fileInfo, res)
@@ -62,6 +66,7 @@ module.exports = async function (context, req) {
     else if(route==='uploaded-files'){ 
         response = await uploadedFiles(req, context.res)
         console.log(response)
+
     }
     else if(route==='updateFileInfo'){ 
         stream.length = buff.data.length
