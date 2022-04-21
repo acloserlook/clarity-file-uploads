@@ -1,3 +1,4 @@
+
 const {uploadFile, 
     uploadedFiles, 
     deleteFiles, 
@@ -16,6 +17,7 @@ const aclStorage = new AclStorage()
 
 
 
+
 module.exports = async function (context, req) {
 
     const route = req.query.route
@@ -23,6 +25,7 @@ module.exports = async function (context, req) {
    
     context.log('JavaScript HTTP trigger function processed a request.');
     const auth = authChecker.enforceAuthentication(req, context.res)
+
     // console.log(auth)
 
     // console.log(req)
@@ -59,16 +62,35 @@ module.exports = async function (context, req) {
     
     
     
+
+    console.log(auth)
+
+
+    const boundary = multipart.getBoundary(req.headers["content-type"]);
+    const files = multipart.parse(req.body, boundary);
+    console.log( files[0].data.toString())
+    const fileInfo = JSON.parse(files[0].data.toString())    
+    const buffer = files[1].data
+    var stream = new Readable();
+    stream.push(buffer);
+    stream.push(null);
     
+    const aclStorage = new AclStorage()
+    const res =  await aclStorage.saveFile({fileInfo, fileStream: stream })
+
+    console.log(res)
+
 
     
     // console.log(req)
     let response;
     if(route==='upload'){ 
+
         
         res =  await aclStorage.saveFile({fileInfo, fileStream: stream })
     
         console.log(res)
+
         response = await uploadFile(fileInfo, res)
         console.log(response)
     }
@@ -76,6 +98,7 @@ module.exports = async function (context, req) {
     else if(route==='uploaded-files'){ 
         response = await uploadedFiles(req, context.res)
         console.log(response)
+
     }
     else if(route==='updateFileInfo'){ 
         stream.length = buff.data.length
@@ -93,6 +116,7 @@ module.exports = async function (context, req) {
     else if(route==='unattachedCalls'){ 
         response = await unattachedCalls(req, context.res)
         console.log(response)
+
     }
 
     context.res = {
