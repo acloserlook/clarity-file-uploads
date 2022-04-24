@@ -69,8 +69,12 @@ module.exports = async function (context, req) {
 
     }
     else if(route==='updateFileInfo'){ 
-        stream.length = buff.data.length
-        res =  await aclStorage.uploadRawFile({...fileInfo, fileStream: stream, mimetype: buff.type })
+        // handle updates without binary data
+        if(buff){
+            stream.length = buff.data.length
+            res =  await aclStorage.uploadRawFile({...fileInfo, fileStream: stream, mimetype: buff.type })
+        }
+        
         response = await updateFileInfo(req, fileInfo, context.res)
 
     }
