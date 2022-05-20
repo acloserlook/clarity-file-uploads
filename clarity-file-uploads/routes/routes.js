@@ -42,9 +42,8 @@ const list=async (req, res) => {
       console.log(`/file/list: exception`, err);
     }
   }
-
-  res.status(200).json(entities);
-  return;
+  
+  return entities;
 };
 
 
@@ -240,9 +239,7 @@ const uploadedFiles=async (req, res) => {
     let result = [];
     await downloadPendingRecordings(currentUserId, eventId, shopperId);
     let fileMetadata = await getFileMetadata(currentUserId, eventId, shopperId, fileTypeId);
-    if(!fileMetadata) {
-      return res.status(200).json([]);
-    } else if(Array.isArray(fileMetadata)) {
+    if(Array.isArray(fileMetadata)) {
       for(let file of fileMetadata) {
         let fileName = file.fileName;
         let directory = `${basePath}/${folder[file.fileTypeId]}`;
@@ -281,9 +278,7 @@ const unattachedCalls =async (req, res) => {
     await downloadPendingRecordings(currentUserId, eventId, shopperId);
     let result = [];
     const callMetadata = await getFileMetadata(currentUserId, eventId, shopperId, AUDIO_FILE_TYPE);
-    if(!callMetadata) {
-      return res.status(200).json([]);
-    } else if(Array.isArray(callMetadata)) {
+    if(Array.isArray(callMetadata)) {
       for(let file of callMetadata) {
         let fileName = file.fileName;
         let directory = `${basePath}/${folder[file.fileTypeId]}`;

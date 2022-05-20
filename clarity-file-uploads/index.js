@@ -87,5 +87,7 @@ module.exports = async function (context, req) {
 
     }
 
-    context.res = response;
+    context.res = {
+        body: response
+    };
 }
