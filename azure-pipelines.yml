@@ -35,8 +35,6 @@ steps:
 
 - script: |
     cd clarity-file-uploads
-    rm package-lock.json
-    rm -R node_modules
     npm install
   displayName: 'Prepare binaries'
 
