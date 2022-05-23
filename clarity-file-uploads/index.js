@@ -20,25 +20,26 @@ const aclStorage = new AclStorage()
 
 module.exports = async function (context, req) {
 
-    const route = req.query.route
+    const route = req.query.route;
 
-   
     context.log('JavaScript HTTP trigger function processed a request.');
-    const auth = authChecker.enforceAuthentication(req, context.res)
-
-    // console.log(auth)
-
-    // console.log(req)
+    const authResult = authChecker.enforceAuthentication(req);
+    if(authResult.errored) {
+        context.res = {
+            status: 401,
+            body: {errored: true, message: 'Unauthenticated'}
+        }; 
+        return;
+    } else {
+        req.aclAuthentication = authResult;
+    }
 
     const boundary = multipart.getBoundary(req.headers["content-type"]);
     const files = multipart.parse(req.body, boundary);
 
-    // console.log(files)
-
     let res={};
     let fileInfo={}
 
-   
     const finfo = files.find((file)=>file.name==='fileInfo')
     const buff = files.find((file)=>file.filename)
 
@@ -54,15 +55,11 @@ module.exports = async function (context, req) {
        
     }
     
-    // console.log(req)
     let response;
     if(route==='upload'){ 
-
-        
         res =  await aclStorage.saveFile({fileInfo, fileStream: stream })
         response = await uploadFile(fileInfo, res)
     }
-
     else if(route==='uploaded-files'){ 
         response = await uploadedFiles(req, context.res)
         console.log(response)
