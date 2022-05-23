@@ -2,21 +2,12 @@ const os = require("os");
 const fs = require("fs");
 const path = require("path");
 const stream = require("stream");
-
-
-// const init = require('../helpers/twilio');
-
+const init = require('../helpers/twilio');
 const Sentry = require('@sentry/node');
-
 const { AclStorage } = require('@acl/storage');
 const aclStorage = new AclStorage();
-
-
-
 const AclData = require('@acl/data');
 const aclData = new AclData();
-
-
 const axios = require('axios');
 const RECEIPT_FILE_TYPE = 1;
 const IMAGE_FILE_TYPE = 2;
@@ -28,10 +19,6 @@ const folder = {
   2: `Photograph`,
   3: `Audio`
 };
-
-
-
-
 
 // result transformations not supported
 const list=async (req, res) => {
@@ -55,9 +42,8 @@ const list=async (req, res) => {
       console.log(`/file/list: exception`, err);
     }
   }
-
-  res.status(200).json(entities);
-  return;
+  
+  return entities;
 };
 
 
@@ -253,9 +239,7 @@ const uploadedFiles=async (req, res) => {
     let result = [];
     await downloadPendingRecordings(currentUserId, eventId, shopperId);
     let fileMetadata = await getFileMetadata(currentUserId, eventId, shopperId, fileTypeId);
-    if(!fileMetadata) {
-      return res.status(200).json([]);
-    } else if(Array.isArray(fileMetadata)) {
+    if(Array.isArray(fileMetadata)) {
       for(let file of fileMetadata) {
         let fileName = file.fileName;
         let directory = `${basePath}/${folder[file.fileTypeId]}`;
@@ -263,7 +247,7 @@ const uploadedFiles=async (req, res) => {
         result.push(file);
       }
     }
-    return res.status(200).send(result);
+    return result;
   } catch (error) {
     console.error(error);
     Sentry.addBreadcrumb({
@@ -280,7 +264,7 @@ const uploadedFiles=async (req, res) => {
     Sentry.captureException(error, captureContext);
 
     let message = process.env.ENV === 'production' ? 'Error executing request: Failed to retrieve uploaded files.' : error.message;
-    return res.status(500).send({errored: true, message});
+    return {errored: true, message};
   }  
 };
 
@@ -294,9 +278,7 @@ const unattachedCalls =async (req, res) => {
     await downloadPendingRecordings(currentUserId, eventId, shopperId);
     let result = [];
     const callMetadata = await getFileMetadata(currentUserId, eventId, shopperId, AUDIO_FILE_TYPE);
-    if(!callMetadata) {
-      return res.status(200).json([]);
-    } else if(Array.isArray(callMetadata)) {
+    if(Array.isArray(callMetadata)) {
       for(let file of callMetadata) {
         let fileName = file.fileName;
         let directory = `${basePath}/${folder[file.fileTypeId]}`;
@@ -304,7 +286,7 @@ const unattachedCalls =async (req, res) => {
         result.push(file);
       }
     }
-    return res.status(200).send(result);
+    return result;
   } catch (error) {
     console.error(error);
     Sentry.addBreadcrumb({
@@ -321,7 +303,7 @@ const unattachedCalls =async (req, res) => {
     Sentry.captureException(error, captureContext);
 
     let message = process.env.ENV === 'production' ? 'Error executing request: Failed to attach Call recordings' : error.message;
-    return res.status(500).send({errored: true, message});
+    return {errored: true, message};
   }  
 };
 
@@ -355,7 +337,7 @@ const updateFileInfo=async (req, fileInfo, res) => {
       let response = await aclStorage.moveFile(oldDirectoryPath, newDirectoryPath, fileName);
       if(response.copyStatus === 'success') result.fileSwapped = true;
     }
-    return res.status(200).send(result);
+    return result;
   } catch (error) {
     console.error(error);
     Sentry.addBreadcrumb({
@@ -372,7 +354,7 @@ const updateFileInfo=async (req, fileInfo, res) => {
     Sentry.captureException(error, captureContext);
 
     let message = process.env.ENV === 'production' ? 'Error executing request: Failed to update the file information.' : error.message;
-    return res.status(500).send({errored: true, message});
+    return {errored: true, message};
   }  
 };
 
@@ -395,11 +377,11 @@ const deleteFiles=async (req, res) => {
         payload.push({ file: fileName, fileId, deleted: false });
       }
     } 
-    return res.status(200).send(payload);
+    return payload;
   } catch (error) {
     let text = fileInfo.length > 1 ? 'files' : 'file';
     let message = process.env.ENV === 'production' ? `Error executing request: Failed to delete the selected ${text}.` : error.message;
-    return res.status(500).send({errored: true, message});
+    return {errored: true, message};
   }
 };
 
