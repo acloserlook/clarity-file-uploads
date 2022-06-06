@@ -160,6 +160,10 @@ const downloadPendingRecordings = async (currentUserId, eventId, shopperId) => {
           const client = init();
           // fetch call detail
           const callDetails = await client.recordings(recording.twilioPendingRecordingId).fetch();
+
+          if(callDetails.duration === -1){
+            callDetails.duration = 0;
+          }
       
           const fileInfo = {
             storagePath,
