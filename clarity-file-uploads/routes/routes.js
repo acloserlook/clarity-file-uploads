@@ -1,6 +1,3 @@
-const os = require("os");
-const fs = require("fs");
-const path = require("path");
 const stream = require("stream");
 const init = require('../helpers/twilio');
 const Sentry = require('@sentry/node');
@@ -72,18 +69,6 @@ const uploadFile = async (originalFileInfo, savedFileInfo) => {
     // return
 };
 
-// create a file stream
-
-const streamToFile = (inputStream, filePath) => {	
-  return new Promise((resolve, reject) => {	
-    const fileWriteStream = fs.createWriteStream(filePath, { mode: 0o666 });
-    inputStream	
-      .pipe(fileWriteStream)	
-      .on('finish', resolve)	
-      .on('error', reject)	
-  })	
-}
-
 const streamToBuffer = (stream) => {
   return new Promise((resolve, reject) => {	
     var buffers = []; 
@@ -150,8 +135,6 @@ const downloadPendingRecordings = async (currentUserId, eventId, shopperId) => {
           let now = new Date();
           let timeTicks = now.getTime() * 10000; // *10000 to replicate current format that use C#
           const fileName = `${payload.responseHistoryId}-${timeTicks}.mp3`;
-          const tempPath = os.tmpdir();	
-          const filePath = path.normalize(`${tempPath}\\${fileName}`);
           
           const storagePath = 'InsightFolders/Uploads/Audio';
           const storageRoot = aclStorage.getAccountName;
@@ -194,18 +177,14 @@ const downloadPendingRecordings = async (currentUserId, eventId, shopperId) => {
             method: 'GET',
             responseType: 'stream'
           }); 
-          await streamToFile(fStream.data, filePath);
-          const fileSize = fs.statSync(filePath).size;
-          var readStream = fs.createReadStream(filePath);   
-          let fileBuffer = await streamToBuffer(readStream);
+          let fileBuffer = await streamToBuffer(fStream.data);
           const bufferStream = new stream.Readable({	
               read() {	
                 this.push(fileBuffer);	
                 this.push(null);	
               }	
             });
-          bufferStream.length = fileSize;
-          fs.unlinkSync(filePath, error => { console.warn(error); });
+          bufferStream.length = fileBuffer.length;
 
           let rawFileParams = {
             fileStream: bufferStream,
