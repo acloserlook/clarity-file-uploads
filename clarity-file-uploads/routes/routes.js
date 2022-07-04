@@ -165,11 +165,26 @@ const downloadPendingRecordings = async (currentUserId, eventId, shopperId) => {
 
           const procedureKeys = ['acl/Files_Upsert', 'acl/FileInfo_Upsert'];
           for(const procedureKey of procedureKeys) {
-            let context = {
-              currentUserId,
-              procedureKey
+            try {
+              let context = {
+                currentUserId,
+                procedureKey
+              }
+             await aclData.exec(fileInfo, context);
+            } catch(error) {
+              Sentry.addBreadcrumb({
+                type: 'error',
+                category: 'Unattached Calls',
+                message: error.stack,
+                level: Sentry.Severity.Error,
+              });
+              const captureContext = {
+                tags: {
+                  section: "File Uploads",
+                }
+              }
+              Sentry.captureException(error, captureContext);
             }
-           await aclData.exec(fileInfo, context);
           }
 
           const fStream = await axios({
