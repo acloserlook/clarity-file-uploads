@@ -10,6 +10,16 @@ const RECEIPT_FILE_TYPE = 1;
 const IMAGE_FILE_TYPE = 2;
 const AUDIO_FILE_TYPE = 3;
 
+Sentry.init({
+  dsn: 'https://0efe2b16f45d41f79b8836ee7f3cc10b@o507407.ingest.sentry.io/5622860',
+  integrations: [
+    new Sentry.Integrations.Http({ tracing: true })
+  ],
+  environment: process.env.ENV,
+  autoSessionTracking: true,
+  tracesSampleRate: 0.25
+});
+
 const basePath = 'InsightFolders/Uploads';
 const folder = {
   1: `Receipt`,
